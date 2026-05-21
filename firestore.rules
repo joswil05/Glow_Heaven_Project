@@ -1,0 +1,35 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // 1. REGLA POR DEFECTO: SECURE-BY-DEFAULT
+    // ==========================================
+    // Bloquea todo acceso de lectura y escritura para cualquier colección
+    // o documento que no esté explícitamente configurado a continuación.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==========================================
+    // 2. REGLAS PARA LA COLECCIÓN DE PRODUCTOS
+    // ==========================================
+    match /products/{productId} {
+      
+      // Permitir la lectura pública para que cualquier cliente pueda ver el catálogo sin autenticarse
+      allow read: if true;
+
+      // Permitir la actualización y eliminación únicamente a usuarios autenticados
+      allow update, delete: if request.auth != null;
+
+      // Permitir la creación únicamente a usuarios autenticados, aplicando además
+      // una estricta validación del esquema de datos para garantizar la integridad
+      allow create: if request.auth != null 
+        && request.resource.data.name is string
+        && request.resource.data.basePrice is number
+        && request.resource.data.category in ['perfumes', 'accessories'];
+        
+    }
+  }
+}
